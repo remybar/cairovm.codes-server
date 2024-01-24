@@ -13,3 +13,7 @@ make deps
 ```bash
 cargo run --bin server
 ```
+
+## 🤗 Contributing
+
+For instructions see [cairovm.codes](https://github.com/walnuthq/cairovm.codes)
