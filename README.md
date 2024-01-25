@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">Cairo VM Codes</h1>
+  <h1 align="center">Cairo VM Codes: Server Code</h1>
 </p>
 <p align="center">
   <strong><i>An interactive reference to Cairo Virtual Machine</i></strong>
