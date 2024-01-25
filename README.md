@@ -3,7 +3,7 @@
 </p>
 <p align="center">
   <strong><i>An interactive reference to Cairo Virtual Machine</i></strong>
-  <img width="1408" alt="screenshot" src="https://user-images.githubusercontent.com/5113/142245431-08ad9922-9115-43fd-9572-8b33cde75bb0.png">
+  <img width="1392" alt="cairovm.codes app screenshot" src="https://github.com/walnuthq/cairovm.codes-server/assets/2983746/63c8813d-70ea-4815-ae03-da9e5ee4af32">
 </p>
 
 This is the backend source code that runs [cairovm.codes](http://cairovm.codes) web application. Repository with the frontend code can be found [here](https://github.com/walnuthq/cairovm.codes). Below you will find the docs on how to contribute to the project and get it up and running locally for further development.
