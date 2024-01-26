@@ -13,6 +13,8 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 
+const CAIRO_LANG_COMPILER_VERSION: &'static str = "2.5.0";
+
 fn write_to_temp_file(content: &str) -> PathBuf {
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let mut rng = rand::thread_rng();
@@ -34,6 +36,7 @@ pub struct RunnerPayload {
 pub struct RunnerResult {
     sierra_program_code: String,
     casm_program_code: String,
+    cairo_lang_compiler_version: String,
 }
 
 pub async fn runner_handler(
@@ -50,7 +53,10 @@ pub async fn runner_handler(
         Err(err) => {
             // Delete the temporary file if an error occurs
             fs::remove_file(&file_path).expect("Failed to delete temporary file");
-            println!("Failed to compile cairo program; error: {}", err.to_string());
+            println!(
+                "Failed to compile cairo program; error: {}",
+                err.to_string()
+            );
             return Err(StatusCode::EXPECTATION_FAILED);
         }
     };
@@ -61,6 +67,7 @@ pub async fn runner_handler(
     let metadata = match create_metadata(&sierra_program, metadata_config) {
         Ok(metadata) => metadata,
         Err(_) => {
+            fs::remove_file(&file_path).expect("Failed to delete temporary file");
             println!("Failed to compute metadata");
             return Err(StatusCode::EXPECTATION_FAILED);
         }
@@ -73,6 +80,7 @@ pub async fn runner_handler(
     ) {
         Ok(casm_program) => casm_program,
         Err(_) => {
+            fs::remove_file(&file_path).expect("Failed to delete temporary file");
             println!("Failed to compile sierra program");
             return Err(StatusCode::EXPECTATION_FAILED);
         }
@@ -84,6 +92,7 @@ pub async fn runner_handler(
     Ok(Json(RunnerResult {
         sierra_program_code: format!("{sierra_program}"),
         casm_program_code: format!("{casm_program}"),
+        cairo_lang_compiler_version: CAIRO_LANG_COMPILER_VERSION.to_string(),
     }))
 }
 
