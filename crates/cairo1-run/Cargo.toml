@@ -1,0 +1,22 @@
+[package]
+name = "cairo1-run"
+version.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cairo-vm = { git = "https://github.com/lambdaclass/cairo-vm.git", rev = "0ea638f1227dccad33a73330cd070d4d68841ff7", features = ["cairo-1-hints"] }
+cairo-lang-compiler = "2.5.0"
+cairo-lang-sierra = "2.4.0"
+cairo-lang-sierra-type-size = "2.5.0"
+cairo-lang-sierra-to-casm = "2.5.0"
+cairo-lang-sierra-ap-change = "2.5.0"
+cairo-lang-sierra-gas = "2.5.0"
+cairo-lang-casm = "2.5.0"
+cairo-lang-utils = "2.5.0"
+thiserror = "1.0.56"
+bincode = { version = "2.0.0-rc.3", default-features = false, features = [
+    "serde",
+] }
+itertools = "0.12.0"
