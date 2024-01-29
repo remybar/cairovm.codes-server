@@ -1,12 +1,12 @@
 ARG RUST_VERSION=1.74.1
 
-FROM rust:${RUST_VERSION} AS builder
+FROM public.ecr.aws/docker/library/rust:${RUST_VERSION} AS builder
 WORKDIR /app
 COPY . .
 RUN make deps
 RUN cargo build --locked --release --bin server
 
-FROM rust:${RUST_VERSION} AS final
+FROM public.ecr.aws/docker/library/rust:${RUST_VERSION} AS final
 RUN adduser \
   --disabled-password \
   --gecos "" \
