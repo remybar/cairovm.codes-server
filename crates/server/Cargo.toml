@@ -15,3 +15,4 @@ serde_json.workspace = true
 url.workspace = true
 rand.workspace = true
 cairo1-run = { path = "../cairo1-run" }
+tracer = { path = "../tracer" }

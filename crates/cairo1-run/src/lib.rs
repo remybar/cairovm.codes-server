@@ -61,6 +61,7 @@ use cairo_vm::vm::runners::builtin_runner::{
 };
 use cairo_vm::vm::runners::cairo_runner::CairoArg;
 use cairo_vm::vm::runners::cairo_runner::RunnerMode;
+use cairo_vm::vm::trace::trace_entry::RelocatedTraceEntry;
 use cairo_vm::vm::vm_memory::memory::Memory;
 use cairo_vm::{
     serde::deserialize_program::ReferenceManager,
@@ -262,8 +263,8 @@ impl FileWriter {
 
 pub struct RunResult {
     pub serialized_output: Option<String>,
-    // pub trace: Option<Vec<u8>>,
-    // pub memory: Option<Vec<u8>>,
+    pub trace: Vec<RelocatedTraceEntry>,
+    pub memory: Vec<Option<Felt252>>,
     pub sierra_program: SierraProgram,
     pub casm_program: CairoProgram,
 }
@@ -396,7 +397,7 @@ pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
     };
 
     let mut runner = CairoRunner::new_v2(&program, &layout, runner_mode)?;
-    let mut vm = VirtualMachine::new(trace_file.is_some() || air_public_input.is_some());
+    let mut vm = VirtualMachine::new(true || trace_file.is_some() || air_public_input.is_some());
     let end = runner.initialize(&mut vm)?;
 
     additional_initialization(&mut vm, data_len)?;
@@ -542,10 +543,14 @@ pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
         runner.get_cairo_pie(&vm)?.write_zip_file(file_path)?
     }
 
+    let relocated_trace = runner
+        .relocated_trace
+        .ok_or(Error::Trace(TraceError::TraceNotRelocated))?;
+
     if let Some(trace_path) = trace_file {
-        let relocated_trace = runner
-            .relocated_trace
-            .ok_or(Error::Trace(TraceError::TraceNotRelocated))?;
+        // let relocated_trace = runner
+        //     .relocated_trace
+        //     .ok_or(Error::Trace(TraceError::TraceNotRelocated))?;
         let trace_file = std::fs::File::create(trace_path)?;
         let mut trace_writer =
             FileWriter::new(io::BufWriter::with_capacity(3 * 1024 * 1024, trace_file));
@@ -553,6 +558,9 @@ pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
         cairo_run::write_encoded_trace(&relocated_trace, &mut trace_writer)?;
         trace_writer.flush()?;
     }
+
+    // let relocated_memory = runner.relocated_memory;
+
     if let Some(memory_path) = memory_file {
         let memory_file = std::fs::File::create(memory_path)?;
         let mut memory_writer =
@@ -564,8 +572,8 @@ pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
 
     Ok(RunResult {
         serialized_output: output_string,
-        // trace: trace_file,
-        // memory: memory_file,
+        trace: relocated_trace,
+        memory: runner.relocated_memory,
         sierra_program,
         casm_program,
     })

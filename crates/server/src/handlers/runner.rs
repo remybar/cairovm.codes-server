@@ -3,6 +3,7 @@ use cairo1_run::{run_program_at_path, RunResult, CAIRO_LANG_COMPILER_VERSION};
 use rand::distributions::{Distribution, Uniform};
 use serde::{Deserialize, Serialize};
 use std::{env, fs, path::PathBuf};
+use tracer::{make_tracer_data, TracerData};
 
 fn write_to_temp_file(content: &str) -> PathBuf {
     let current_dir = env::current_dir().expect("Failed to get current directory");
@@ -21,12 +22,13 @@ pub struct RunnerPayload {
     cairo_program_code: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct RunnerResult {
     sierra_program_code: String,
     casm_program_code: String,
     cairo_lang_compiler_version: String,
     serialized_output: Option<String>,
+    tracer_data: TracerData,
 }
 
 pub async fn runner_handler(
@@ -38,6 +40,8 @@ pub async fn runner_handler(
         sierra_program,
         casm_program,
         serialized_output,
+        trace,
+        memory,
     } = match run_program_at_path(&file_path) {
         Ok(result) => result,
         Err(error) => {
@@ -47,6 +51,8 @@ pub async fn runner_handler(
         }
     };
 
+    let tracer_data = make_tracer_data(trace, memory);
+
     // Delete the temporary file
     fs::remove_file(&file_path).expect("Failed to delete temporary file");
 
@@ -55,5 +61,6 @@ pub async fn runner_handler(
         casm_program_code: format!("{casm_program}"),
         cairo_lang_compiler_version: CAIRO_LANG_COMPILER_VERSION.to_string(),
         serialized_output,
+        tracer_data,
     }))
 }

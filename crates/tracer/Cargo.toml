@@ -1,11 +1,13 @@
 [package]
-name = "cairo1-run"
+name = "tracer"
 version.workspace = true
 edition.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+serde.workspace = true
+serde_json.workspace = true
 cairo-vm.workspace = true
 cairo-lang-compiler.workspace = true
 cairo-lang-sierra.workspace = true
@@ -18,3 +20,5 @@ cairo-lang-utils.workspace = true
 thiserror.workspace = true
 bincode.workspace = true
 itertools.workspace = true
+num-bigint = "0.4.4"
+byteorder = "1.5.0"
