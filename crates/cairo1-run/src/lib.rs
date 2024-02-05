@@ -10,6 +10,7 @@ use cairo_lang_casm::casm_extend;
 use cairo_lang_casm::hints::Hint;
 use cairo_lang_casm::instructions::Instruction;
 use cairo_lang_compiler::db;
+use cairo_lang_compiler::diagnostics::DiagnosticsReporter;
 use cairo_lang_compiler::{compile_cairo_project_at_path, CompilerConfig};
 use cairo_lang_sierra::extensions::bitwise::BitwiseType;
 use cairo_lang_sierra::extensions::core::{CoreLibfunc, CoreType};
@@ -283,6 +284,7 @@ pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
 
     let compiler_config = CompilerConfig {
         replace_ids: true,
+        diagnostics_reporter: DiagnosticsReporter::default().allow_warnings(),
         ..CompilerConfig::default()
     };
     let sierra_program = compile_cairo_project_at_path(filename, compiler_config)
