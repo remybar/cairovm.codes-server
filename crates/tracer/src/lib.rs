@@ -1,6 +1,6 @@
 use byteorder::{ByteOrder, LittleEndian};
 use cairo_vm::{
-    types::instruction::Instruction,
+    types::instruction::{Instruction, Op1Addr},
     utils::PRIME_STR,
     vm::{decoding::decoder::decode_instruction, trace::trace_entry::RelocatedTraceEntry},
     Felt252,
@@ -45,6 +45,7 @@ pub struct TracerData {
     pub pc_inst_map: HashMap<usize, InstructionSerializable>,
     pub trace: Vec<RelocatedTraceEntry>,
     pub memory: HashMap<usize, String>,
+    pub pc_to_inst_indexes_map: HashMap<usize, usize>,
 }
 
 pub fn make_tracer_data(
@@ -52,18 +53,41 @@ pub fn make_tracer_data(
     memory: Vec<Option<Felt252>>,
 ) -> TracerData {
     let mut pc_inst_map: HashMap<usize, InstructionSerializable> = HashMap::new();
+    let mut pc_to_inst_indexes_map: HashMap<usize, usize> = HashMap::new();
 
-    for entry in trace.iter() {
-        let (instruction_encoding, _) = get_instruction_encoding(entry.pc, &memory)
-            .expect("Failed to get instruction encoding");
-        let instruction_encoding = instruction_encoding.to_bytes_le();
-        let instruction_encoding = LittleEndian::read_u64(&instruction_encoding[..]);
+    let max_pc_entry = trace.iter().max_by(|a, b| a.pc.cmp(&b.pc));
+
+    let max_pc = match max_pc_entry {
+        Some(max_entry) => max_entry.pc,
+        None => {
+            println!("No entries in the trace");
+            0
+        }
+    };
+
+    let mut skip_next_pc = false;
+    let mut casm_index: usize = 0;
+    for pc in 1..=max_pc {
+        if skip_next_pc {
+            skip_next_pc = false;
+            continue;
+        }
+
+        let (instruction_encoding_felt, _) =
+            get_instruction_encoding(pc, &memory).expect("Failed to get instruction encoding");
+        let instruction_encoding_bytes_le = instruction_encoding_felt.to_bytes_le();
+        let instruction_encoding_u64 = LittleEndian::read_u64(&instruction_encoding_bytes_le[..]);
         let instruction =
-            decode_instruction(instruction_encoding).expect("Failed to decode instruction");
-        pc_inst_map.insert(entry.pc, InstructionSerializable(instruction));
+            decode_instruction(instruction_encoding_u64).expect("Failed to decode instruction");
+        if instruction.op1_addr == Op1Addr::Imm {
+            skip_next_pc = true;
+        }
+        pc_inst_map.insert(pc, InstructionSerializable(instruction));
+        pc_to_inst_indexes_map.insert(pc, casm_index);
+        casm_index += 1;
     }
 
-    let memory = memory
+    let memory_map = memory
         .iter()
         .filter_map(|x| x.as_ref().map(|_| x.clone().unwrap()))
         .map(|x| x.to_hex_string())
@@ -74,7 +98,8 @@ pub fn make_tracer_data(
     TracerData {
         pc_inst_map,
         trace,
-        memory,
+        memory: memory_map,
+        pc_to_inst_indexes_map,
     }
 }
 

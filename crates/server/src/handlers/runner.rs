@@ -29,6 +29,7 @@ pub struct RunnerResult {
     cairo_lang_compiler_version: String,
     serialized_output: Option<String>,
     tracer_data: TracerData,
+    casm_formatted_instructions: Vec<String>,
 }
 
 pub async fn runner_handler(
@@ -42,6 +43,7 @@ pub async fn runner_handler(
         serialized_output,
         trace,
         memory,
+        instructions,
     } = match run_program_at_path(&file_path) {
         Ok(result) => result,
         Err(error) => {
@@ -51,16 +53,28 @@ pub async fn runner_handler(
         }
     };
 
-    let tracer_data = make_tracer_data(trace, memory);
-
     // Delete the temporary file
     fs::remove_file(&file_path).expect("Failed to delete temporary file");
 
+    let tracer_data = make_tracer_data(trace, memory);
+
+    let casm_program_code = instructions
+        .iter()
+        .map(|instruction| instruction.to_string())
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let casm_formatted_instructions = instructions
+        .iter()
+        .map(|instruction| instruction.to_string())
+        .collect();
+
     Ok(Json(RunnerResult {
         sierra_program_code: format!("{sierra_program}"),
-        casm_program_code: format!("{casm_program}"),
+        casm_program_code,
         cairo_lang_compiler_version: CAIRO_LANG_COMPILER_VERSION.to_string(),
         serialized_output,
         tracer_data,
+        casm_formatted_instructions,
     }))
 }

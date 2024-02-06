@@ -268,6 +268,7 @@ pub struct RunResult {
     pub memory: Vec<Option<Felt252>>,
     pub sierra_program: SierraProgram,
     pub casm_program: CairoProgram,
+    pub instructions: Vec<Instruction>,
 }
 
 pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
@@ -348,6 +349,12 @@ pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
         program_instructions,
         libfunc_footer.iter()
     );
+
+    let mut instructions_vec: Vec<Instruction> = vec![];
+    instructions_vec.extend(proof_mode_header.clone());
+    instructions_vec.extend(entry_code.clone());
+    instructions_vec.extend(casm_program.instructions.clone());
+    instructions_vec.extend(libfunc_footer.clone());
 
     let (processor_hints, program_hints) = build_hints_vec(instructions.clone());
 
@@ -578,6 +585,7 @@ pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
         memory: runner.relocated_memory,
         sierra_program,
         casm_program,
+        instructions: instructions_vec,
     })
 }
 
