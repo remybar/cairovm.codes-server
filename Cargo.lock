@@ -2282,6 +2282,8 @@ name = "server"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "cairo-lang-sierra",
+ "cairo-lang-sierra-to-casm",
  "cairo1-run",
  "rand",
  "serde",

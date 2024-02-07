@@ -14,5 +14,7 @@ serde.workspace = true
 serde_json.workspace = true
 url.workspace = true
 rand.workspace = true
+cairo-lang-sierra-to-casm.workspace = true
+cairo-lang-sierra.workspace = true
 cairo1-run = { path = "../cairo1-run" }
 tracer = { path = "../tracer" }

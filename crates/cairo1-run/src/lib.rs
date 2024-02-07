@@ -269,6 +269,7 @@ pub struct RunResult {
     pub sierra_program: SierraProgram,
     pub casm_program: CairoProgram,
     pub instructions: Vec<Instruction>,
+    pub headers_len: usize,
 }
 
 pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
@@ -355,6 +356,8 @@ pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
     instructions_vec.extend(entry_code.clone());
     instructions_vec.extend(casm_program.instructions.clone());
     instructions_vec.extend(libfunc_footer.clone());
+
+    let headers_len = proof_mode_header.len() + entry_code.len();
 
     let (processor_hints, program_hints) = build_hints_vec(instructions.clone());
 
@@ -586,6 +589,7 @@ pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
         sierra_program,
         casm_program,
         instructions: instructions_vec,
+        headers_len,
     })
 }
 
