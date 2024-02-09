@@ -1,10 +1,11 @@
 use axum::{http::StatusCode, Json};
-use cairo1_run::{run_program_at_path, RunResult, CAIRO_LANG_COMPILER_VERSION};
+use cairo1_run::{run_program_at_path, RunResult, CAIRO_LANG_COMPILER_VERSION, Error};
 use cairo_lang_sierra::program::Program;
 use cairo_lang_sierra_to_casm::compiler::CairoProgramDebugInfo;
 use rand::distributions::{Distribution, Uniform};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, env, fs, path::PathBuf};
+use axum::response::{IntoResponse, Response};
 use tracer::{make_tracer_data, TracerData};
 
 fn write_to_temp_file(content: &str) -> PathBuf {
@@ -42,11 +43,34 @@ pub struct RunnerResult {
     casm_formatted_instructions: Vec<String>,
     casm_to_sierra_map: HashMap<usize, Vec<usize>>,
     sierra_formatted_program: SierraFormattedProgram,
+    diagnostics: Vec<String>
+}
+
+#[derive(Serialize)]
+pub struct ErrorResult {
+    #[serde(skip)]
+    status_code: StatusCode,
+    diagnostics: Vec<String>
+}
+
+impl ErrorResult {
+    fn new(status_code: StatusCode, diagnostics: Vec<String>) -> Self {
+       Self {
+           status_code,
+           diagnostics
+       }
+    }
+}
+
+impl IntoResponse for ErrorResult {
+    fn into_response(self) -> Response {
+        (self.status_code, Json(self)).into_response()
+    }
 }
 
 pub async fn runner_handler(
     Json(payload): Json<RunnerPayload>,
-) -> Result<Json<RunnerResult>, StatusCode> {
+) -> Result<Json<RunnerResult>, ErrorResult> {
     let file_path = write_to_temp_file(&payload.cairo_program_code);
 
     let RunResult {
@@ -57,12 +81,16 @@ pub async fn runner_handler(
         memory,
         instructions,
         headers_len,
+        diagnostics,
     } = match run_program_at_path(&file_path) {
         Ok(result) => result,
         Err(error) => {
-            dbg!(error);
+            dbg!(&error);
             fs::remove_file(&file_path).expect("Failed to delete temporary file");
-            return Err(StatusCode::EXPECTATION_FAILED);
+            return Err(match error {
+                Error::DiagnosticsError(program_diagnostics) => ErrorResult::new(StatusCode::EXPECTATION_FAILED, program_diagnostics),
+                _ => ErrorResult::new(StatusCode::EXPECTATION_FAILED, vec![])
+            })
         }
     };
 
@@ -91,6 +119,7 @@ pub async fn runner_handler(
         casm_formatted_instructions,
         casm_to_sierra_map: make_casm_to_sierra_map(casm_program.debug_info, headers_len),
         sierra_formatted_program: format_sierra_program(sierra_program),
+        diagnostics
     }))
 }
 
