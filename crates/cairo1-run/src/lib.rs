@@ -182,8 +182,8 @@ fn validate_layout(value: &str) -> Result<String, String> {
 
 #[derive(Debug, Error)]
 pub enum Error {
-    // #[error("Invalid arguments")]
-    // Cli(#[from] clap::Error),
+    #[error("Failed to extract arguments from the provided string")]
+    BadArgumentStringFormat,
     #[error("Failed to interact with the file system")]
     IO(#[from] std::io::Error),
     #[error(transparent)]
@@ -276,10 +276,8 @@ pub struct RunResult {
     pub diagnostics: Vec<String>
 }
 
-pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
-    // let args = Args::try_parse_from(args)?;
+pub fn run_program_at_path(filename: &PathBuf, arguments_as_str: &str) -> Result<RunResult, Error> {
     let proof_mode = false;
-    let program_args = vec![];
     let layout = "all_cairo";
     let trace_file: Option<PathBuf> = None;
     let air_public_input: Option<PathBuf> = None;
@@ -294,6 +292,15 @@ pub fn run_program_at_path(filename: &PathBuf) -> Result<RunResult, Error> {
         program_diagnostics.push(format!("{severity}: {diagnostic}"));
     };
     let diagnostics_reporter = DiagnosticsReporter::callback(diagnostics_callback).allow_warnings();
+
+    // extract program arguments
+    let program_args = match process_args(&arguments_as_str) {
+        Ok(result) => result.0,
+        Err(error) => {
+            dbg!(error);
+            return Err(Error::BadArgumentStringFormat);
+        }
+    };
 
     let compiler_config = CompilerConfig {
         replace_ids: true,

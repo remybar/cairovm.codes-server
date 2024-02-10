@@ -31,6 +31,7 @@ pub struct SierraFormattedProgram {
 #[derive(Serialize, Deserialize)]
 pub struct RunnerPayload {
     cairo_program_code: String,
+    program_arguments: String
 }
 
 #[derive(Serialize)]
@@ -82,7 +83,7 @@ pub async fn runner_handler(
         instructions,
         headers_len,
         diagnostics,
-    } = match run_program_at_path(&file_path) {
+    } = match run_program_at_path(&file_path, &payload.program_arguments[..]) {
         Ok(result) => result,
         Err(error) => {
             dbg!(&error);
